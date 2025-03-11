@@ -56,11 +56,7 @@ app.delete('/productos/:id', async (req, res) => {
   }
 });
 
-
-
-
-
-
+//RUTA PARA PROVEEDORES
 // Obtener todos los proveedores
 app.get('/proveedores', async (req, res) => {
   try {
@@ -124,6 +120,141 @@ app.delete('/proveedores/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+//Ruta para compras
+// Obtener todas las compras
+app.get('/compras', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM Compras');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Obtener una compra por ID
+app.get('/compras/:id', async (req, res) => {
+    const {id} = req.params;
+    try {
+        const [rows] = await db.query('SELECT * FROM Compras WHERE id = ?', [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Compra no encontrada' });
+        }
+        res.json(rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Agregar una nueva compra
+app.post('/compras', async (req, res) => {
+    const { fecha, total, proveedor_id } = req.body;
+    try {
+        const [result] = await db.query(
+            'INSERT INTO Compras (fecha, total, proveedor_id) VALUES (?, ?, ?)',
+            [fecha, total, proveedor_id]
+        );
+        res.status(201).json({ id: result.insertId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Actualizar una compra
+
+app.put('/compras/:id', async (req, res) => {
+    const { id } = req.params;
+    const { fecha, total, proveedor_id } = req.body;
+    try {
+        await db.query(
+            'UPDATE Compras SET fecha = ?, total = ?, proveedor_id = ? WHERE id = ?',
+            [fecha, total, proveedor_id, id]
+        );
+        res.json({ message: 'Compra actualizada correctamente' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+);
+
+// Eliminar una compra
+app.delete('/compras/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('DELETE FROM Compras WHERE id = ?', [id]);
+        res.json({ message: 'Compra eliminada correctamente' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+//RUTA PARA VENTAS
+// Obtener todas las ventas
+app.get('/ventas', async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM Ventas');
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Obtener una venta por ID
+app.get('/ventas/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [rows] = await db.query('SELECT * FROM Ventas WHERE id = ?', [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Venta no encontrada' });
+        }
+        res.json(rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Agregar una nueva venta
+app.post('/ventas', async (req, res) => {
+    const { fecha, total, cliente_id } = req.body;
+    try {
+        const [result] = await db.query(
+            'INSERT INTO Ventas (fecha, total, cliente_id) VALUES (?, ?, ?)',
+            [fecha, total, cliente_id]
+        );
+        res.status(201).json({ id: result.insertId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Actualizar una venta
+app.put('/ventas/:id', async (req, res) => {
+    const { id } = req.params;
+    const { fecha, total, cliente_id } = req.body;
+    try {
+        await db.query(
+            'UPDATE Ventas SET fecha = ?, total = ?, cliente_id = ? WHERE id = ?',
+            [fecha, total, cliente_id, id]
+        );
+        res.json({ message: 'Venta actualizada correctamente' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Eliminar una venta
+app.delete('/ventas/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('DELETE FROM Ventas WHERE id = ?', [id]);
+        res.json({ message: 'Venta eliminada correctamente' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+
 
 // Iniciar el servidor
 const PORT = 3000;
