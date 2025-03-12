@@ -1,13 +1,13 @@
-const express = require('express');
-const cors = require('cors');
-const db = require('./db');
+const express = require('express'); // Importar el paquete express
+const cors = require('cors'); // Importar el paquete cors
+const db = require('./db'); // Importar el pool de conexiones a la base de datos
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+const app = express(); // Crear una nueva aplicación express
+app.use(cors());  // Habilitar CORS para la aplicación express (solo en desarrollo) 
+app.use(express.json()); // Habilitar el soporte para JSON en la aplicación express
 
 // Ruta para obtener todos los productos
-app.get('/productos', async (req, res) => {
+app.get('/productos', async (req, res) => { // Definir una ruta para obtener todos los productos
   try {
     const [rows] = await db.query('SELECT * FROM Productos');
     res.json(rows);
@@ -148,11 +148,11 @@ app.get('/compras/:id', async (req, res) => {
 
 // Agregar una nueva compra
 app.post('/compras', async (req, res) => {
-    const { fecha, total, proveedor_id } = req.body;
+    const {proveedor_id, total } = req.body;
     try {
         const [result] = await db.query(
-            'INSERT INTO Compras (fecha, total, proveedor_id) VALUES (?, ?, ?)',
-            [fecha, total, proveedor_id]
+            'INSERT INTO Compras (proveedor_id, total) VALUES (?, ?)',
+            [ proveedor_id, total]
         );
         res.status(201).json({ id: result.insertId });
     } catch (err) {
@@ -254,6 +254,74 @@ app.delete('/ventas/:id', async (req, res) => {
 });
 
 
+//DETALLE COMPRAS
+// Obtener todos los detalles de compras
+
+// agregar un nuevo detalle de compra
+app.post('/detalle_compras', async (req, res) => {
+   
+    const { compra_id, producto_id, cantidad, precio_unitario } = req.body;
+    try {
+        const [result] = await db.query(
+            'INSERT INTO Detalle_compras (compra_id, producto_id, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
+            [compra_id, producto_id, cantidad, precio_unitario]
+        );
+        res.status(201).json({ id: result.insertId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    } 
+});
+
+
+// Obtener todos los detalles de compras
+app.get('/detalle_compras', async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM Detalle_compras');
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Obtener un detalle de compra por ID
+app.get('/detalle_compras/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [rows] = await db.query('SELECT * FROM Detalle_compras WHERE id = ?', [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Detalle de compra no encontrado' });
+        }
+        res.json(rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Actualizar un detalle de compra
+app.put('/detalle_compras/:id', async (req, res) => {
+    const { id } = req.params;
+    const { compra_id, producto_id, cantidad, precio_unitario } = req.body;
+    try {
+        await db.query(
+            'UPDATE Detalle_compras SET compra_id = ?, producto_id = ?, cantidad = ?, precio_unitario = ? WHERE id = ?',
+            [compra_id, producto_id, cantidad, precio_unitario, id]
+        );
+        res.json({ message: 'Detalle de compra actualizado correctamente' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Eliminar un detalle de compra
+app.delete('/detalle_compras/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('DELETE FROM Detalle_compras WHERE id = ?', [id]);
+        res.json({ message: 'Detalle de compra eliminado correctamente' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 
 // Iniciar el servidor
