@@ -1,6 +1,9 @@
 const express = require('express'); // Importar el paquete express
 const cors = require('cors'); // Importar el paquete cors
 const db = require('./db'); // Importar el pool de conexiones a la base de datos
+const bcrypt = require('bcryptjs'); // Importar el paquete bcryptjs //se deben instalar las dependencias con npm install bcryptjs
+const jwt = require('jsonwebtoken'); // Importar el paquete jsonwebtoken //se deben instalar las dependencias con npm install jsonwebtoken
+
 
 const app = express(); // Crear una nueva aplicación express
 app.use(cors());  // Habilitar CORS para la aplicación express (solo en desarrollo) 
@@ -321,6 +324,67 @@ app.delete('/detalle_compras/:id', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+//USUARIOS
+//Registro de usuarios
+
+app.post('/registro', async (req, res) => {
+  const { nombre, email, password, rol } = req.body;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10); // Encriptar la contraseña
+    const [result] = await db.query(
+      'INSERT INTO Usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)',
+      [nombre, email, hashedPassword, rol]
+    );
+    res.status(201).json({ id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+);
+
+//Login de usuarios
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  try{
+    const [rows] = await db.query('SELECT * FROM Usuarios WHERE email = ?', [email]);
+    if(rows.length === 0){
+      return res.status(401).json({ error: 'Usuario no encontrado' });
+    }
+
+    const user = rows[0];
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+
+    // Generar el token JWT
+    const token = jwt.sign({ id: user.id, rol: user.rol }, 'secreto', { expiresIn: '1h' });
+    res.json({ token });
+  }
+    catch (err) {
+      res.status(500).json({ error: err.message });
+
+    }
+  
+});
+
+//actualizar un usuario
+app.put('/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nombre, email, password, rol } = req.body;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10); // Encriptar la contraseña
+    await db.query(
+      'UPDATE Usuarios SET nombre = ?, email = ?, password = ?, rol = ? WHERE id = ?',
+      [nombre, email, hashedPassword, rol, id]
+
+    );
+    res.json({ message: 'Usuario actualizado correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 
