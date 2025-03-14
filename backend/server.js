@@ -218,11 +218,11 @@ app.get('/ventas/:id', async (req, res) => {
 
 // Agregar una nueva venta
 app.post('/ventas', async (req, res) => {
-    const { fecha, total, cliente_id } = req.body;
+    const { usuario_id, total, } = req.body;
     try {
         const [result] = await db.query(
-            'INSERT INTO Ventas (fecha, total, cliente_id) VALUES (?, ?, ?)',
-            [fecha, total, cliente_id]
+            'INSERT INTO Ventas (usuario_id, total) VALUES (?, ?)',
+            [usuario_id, total]
         );
         res.status(201).json({ id: result.insertId });
     } catch (err) {
@@ -233,11 +233,11 @@ app.post('/ventas', async (req, res) => {
 // Actualizar una venta
 app.put('/ventas/:id', async (req, res) => {
     const { id } = req.params;
-    const { fecha, total, cliente_id } = req.body;
+    const {  usuario_id, total } = req.body;
     try {
         await db.query(
-            'UPDATE Ventas SET fecha = ?, total = ?, cliente_id = ? WHERE id = ?',
-            [fecha, total, cliente_id, id]
+            'UPDATE Ventas SET fecha = ?, total = ?, usuario_id = ? WHERE id = ?',
+            [usuario_id, total]
         );
         res.json({ message: 'Venta actualizada correctamente' });
     } catch (err) {
@@ -326,6 +326,73 @@ app.delete('/detalle_compras/:id', async (req, res) => {
     }
 });
 
+//DETALLE VENTAS
+// Obtener todos los detalles de ventas
+app.get('/detalle_ventas', async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM Detalle_ventas');
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Agregar un nuevo detalle de venta
+app.post('/detalle_ventas', async (req, res) => {
+    const { venta_id, producto_id, cantidad, precio_unitario } = req.body;
+    try {
+        const [result] = await db.query(
+            'INSERT INTO Detalle_ventas (venta_id, producto_id, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
+            [venta_id, producto_id, cantidad, precio_unitario]
+        );
+        res.status(201).json({ id: result.insertId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Obtener un detalle de venta por ID
+app.get('/detalle_ventas/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [rows] = await db.query('SELECT * FROM Detalle_ventas WHERE id = ?', [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Detalle de venta no encontrado' });
+        }
+        res.json(rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Actualizar un detalle de venta
+app.put('/detalle_ventas/:id', async (req, res) => {
+    const { id } = req.params;
+    const { venta_id, producto_id, cantidad, precio_unitario } = req.body;
+    try {
+        await db.query(
+            'UPDATE Detalle_ventas SET venta_id = ?, producto_id = ?, cantidad = ?, precio_unitario = ? WHERE id = ?',
+            [venta_id, producto_id, cantidad, precio_unitario, id]
+        );
+        res.json({ message: 'Detalle de venta actualizado correctamente' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Eliminar un detalle de venta
+app.delete('/detalle_ventas/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('DELETE FROM Detalle_ventas WHERE id = ?', [id]);
+        res.json({ message: 'Detalle de venta eliminado correctamente' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+
 //USUARIOS
 //Registro de usuarios
 
@@ -382,6 +449,17 @@ app.put('/usuarios/:id', async (req, res) => {
 
     );
     res.json({ message: 'Usuario actualizado correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+//eliminar un usuario
+app.delete('/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query('DELETE FROM Usuarios WHERE id = ?', [id]);
+    res.json({ message: 'Usuario eliminado correctamente' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
