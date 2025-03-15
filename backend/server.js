@@ -167,11 +167,11 @@ app.post('/compras', async (req, res) => {
 
 app.put('/compras/:id', async (req, res) => {
     const { id } = req.params;
-    const { fecha, total, proveedor_id } = req.body;
+    const {proveedor_id, total } = req.body;
     try {
         await db.query(
-            'UPDATE Compras SET fecha = ?, total = ?, proveedor_id = ? WHERE id = ?',
-            [fecha, total, proveedor_id, id]
+            'UPDATE Compras SET  proveedor_id = ?, total = ? WHERE id = ?',
+            [proveedor_id, total, id]
         );
         res.json({ message: 'Compra actualizada correctamente' });
     } catch (err) {
@@ -236,8 +236,8 @@ app.put('/ventas/:id', async (req, res) => {
     const {  usuario_id, total } = req.body;
     try {
         await db.query(
-            'UPDATE Ventas SET fecha = ?, total = ?, usuario_id = ? WHERE id = ?',
-            [usuario_id, total]
+            'UPDATE Ventas SET usuario_id = ?, total = ? WHERE id = ?',
+            [usuario_id, total, id]
         );
         res.json({ message: 'Venta actualizada correctamente' });
     } catch (err) {
@@ -399,7 +399,7 @@ app.delete('/detalle_ventas/:id', async (req, res) => {
 app.post('/registro', async (req, res) => {
   const { nombre, email, password, rol } = req.body;
   try {
-    const hashedPassword = await bcrypt.hash(password, 10); // Encriptar la contraseña
+    const hashedPassword = await bcrypt.hash(password, 10); // Encriptar la contraseña  
     const [result] = await db.query(
       'INSERT INTO Usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)',
       [nombre, email, hashedPassword, rol]
