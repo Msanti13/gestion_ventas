@@ -1,11 +1,48 @@
+const https = require('https');
+const fs = require('fs'); // Importar el módulo fs para leer archivos
+
 const express = require('express'); // Importar el paquete express
 const cors = require('cors'); // Importar el paquete cors
 const db = require('./db'); // Importar el pool de conexiones a la base de datos
 const bcrypt = require('bcryptjs'); // Importar el paquete bcryptjs //se deben instalar las dependencias con npm install bcryptjs
 const jwt = require('jsonwebtoken'); // Importar el paquete jsonwebtoken //se deben instalar las dependencias con npm install jsonwebtoken
 
-
 const app = express(); // Crear una nueva aplicación express
+
+//cargar el certificado y la clave privada
+const httpsOptions = {
+  cert: fs.readFileSync('cert.pem'),
+  key: fs.readFileSync('key.pem')
+};
+
+// Ruta de API
+app.get('/', (req, res) => {
+  res.send('API de la tienda en línea');
+});
+
+
+
+// Middlewares  
+const client = require('./redis'); // Importar el cliente de redis
+// Middleware para verificar el token
+function cache (req, res, next) {
+  const cacheKey = req.originalUrl; // Crear una clave con la URL de la petición
+  
+  client.get(cacheKey, (err, data) => {
+    if (err) throw err;
+    if (data !== null) {
+      // Si hay datos en la caché, enviarlos como respuesta
+      res.json(JSON.parse(data));
+    } else {
+      // Si no hay datos en la caché, continuar con el siguiente
+      next();
+    }
+  });
+}
+
+
+
+
 app.use(cors());  // Habilitar CORS para la aplicación express (solo en desarrollo) 
 app.use(express.json()); // Habilitar el soporte para JSON en la aplicación express
 
@@ -434,7 +471,19 @@ app.post('/login', async (req, res) => {
       res.status(500).json({ error: err.message });
 
     }
-  
+
+  //middleware para verificar el token
+  function verificarToken(req, res, next) {
+    const token = req.headers.authorization;
+    try {
+      const payload = jwt.verify(token, 'secreto');
+      req.user = payload;
+      next();
+    } catch (err) {
+      res.status(401).json({ error: 'Token inválido' });
+    }
+  }
+
 });
 
 //actualizar un usuario
@@ -466,8 +515,14 @@ app.delete('/usuarios/:id', async (req, res) => {
 });
 
 
-// Iniciar el servidor
+/* Iniciar el servidor
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
+*/
+// Iniciar el servidor con HTTPS
+const PORT = 3000;
+https.createServer(httpsOptions, app).listen(PORT, () => {
+  console.log(`Servidor corriendo en https://localhost:${PORT}`);
 });
